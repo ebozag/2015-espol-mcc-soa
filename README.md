@@ -17,3 +17,16 @@ Original trace example:
 
     [1] Michael Zink, Kyoungwon Suh, Yu Gu and Jim Kurose, "Watch Global Cache Local: YouTube Network Traces at a Campus Network - Measurements and Implications", 2008 IEEE MMCN.
 ====
+File: scriptParseRedisMonitorTraces.py
+
+This script will convert the traces from REDIS MONITOR, into the format required 
+for the YCSB-rp (https://github.com/ebozag/YCSB-rp) in order to execute trace-driven tests.
+
+The output will be in the form "COMMAND,ID" (without the quotes), where COMMAND is one of READ,
+INSERT,UPDATE,SCAN, and ID will be the key for the record in the DB.
+
+Original trace example:
+    +1435309891.936065 [0 10.0.3.2:33051] "HGETALL" "user517553758061063044"
+    +1435309891.936258 [0 10.0.3.2:33051] "HGETALL" "user5339761945212382530"
+
+====
