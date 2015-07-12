@@ -1,0 +1,75 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jul 1 08:31:22 2015
+
+@author: Edwin Boza
+
+This script will convert the traces from REDIS MONITOR, into the format required 
+for the YCSB-rp (https://github.com/ebozag/YCSB-rp) in order to execute trace-driven tests.
+
+The output will be in the form "COMMAND,ID" (without the quotes), where COMMAND is one of READ,
+INSERT,UPDATE,SCAN, and ID will be the key for the record in the DB.
+
+Usage:
+
+    ./scriptParseYoutubeTraces.py -f <tracefile> [-o <outputs>]
+    
+    tracefile  Is the path and name of the file containing the raw traces.
+    outputs    Is the number of output files, should be equal to the number of
+               threads to be used in YCSB-rp.
+    
+Original trace example:
+    +1435309891.936065 [0 10.0.3.2:33051] "HGETALL" "user517553758061063044"
+    +1435309891.936258 [0 10.0.3.2:33051] "HGETALL" "user5339761945212382530"
+"""
+
+import sys, getopt, re
+from itertools import cycle
+
+def main(argv):
+    ### Put the arguments in variables.
+    traceFilename = ''
+    numDestinationFiles = 1
+    try:
+        opts, args = getopt.getopt(argv,"hf:o:",["tracefile=","outputs="])
+    except getopt.GetoptError:
+        print 'scriptParseYoutubeTraces.py -f <tracefile> [-o <outputs>]'
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print 'scriptParseYoutubeTraces.py -f <tracefile> [-o <outputs>]'
+            sys.exit()
+        elif opt in ("-f", "--tracefile"):
+            traceFilename = arg
+        elif opt in ("-o", "--outputs"):
+            numDestinationFiles = arg
+    if traceFilename == '':
+        print 'ERROR: Must specify a trace filename.'
+        print 'scriptParseYoutubeTraces.py -f <tracefile> [-o <outputs>]'
+        sys.exit(1)
+    if int(numDestinationFiles) <= 0 or traceFilename == '':
+        print 'ERROR: <outputs> must be a number greater than 0.'
+        sys.exit(1)
+    
+    ### Open the output files, they will be truncated.
+    outputFiles=[]
+    for i in range(1, int(numDestinationFiles)+1):
+        filename = 'parsedFile-%d.dat' % i
+        outputFiles.append(open(filename, 'w') )
+    
+    poolOutputFiles = cycle(outputFiles)
+    
+    ### Open the file in read mode, and parse each line to obtain the command 
+    ### and the id.
+    with open (traceFilename, "r") as traceFile:
+        for line in traceFile:
+            parsedEvent = re.findall(r'.*\s.*\s\"(.*)\"\s\"(.*)\".*',line.rstrip())
+            if parsedEvent[0][0] in ['HGETALL']:
+               poolOutputFiles.next().write('READ,' + parsedEvent[0][1]+'\n')
+    
+    for fh in outputFiles:
+            fh.close()
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
